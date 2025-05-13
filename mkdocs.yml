@@ -1,0 +1,20 @@
+
+# mkdocs.yml
+site_name: mlops-demo
+site_url: FILL OUT
+repo_url: https://github.com/jhulio435m/model_demo
+nav:
+  - Home: index.md
+  - workflows:
+    - main: mlops-demo/main.md
+  - mlops-demo:
+    - plotter: mlops-demo/plotter.md
+    - data: mlops-demo/data.md
+    - evaluate: mlops-demo/evaluate.md
+    - predict: mlops-demo/predict.md
+    - train: mlops-demo/utils.md
+theme: readthedocs
+plugins:
+  - mkdocstrings
+watch:
+  - .  # reload docs for any file changes
