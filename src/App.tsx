@@ -24,7 +24,11 @@ function App() {
     return_to_start: false,
   });
 
-  const generateId = () => Math.random().toString(36).substr(2, 9);
+  // Use crypto API for better randomness
+  const generateId = () =>
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : Math.random().toString(36).substring(2, 11);
 
   const handleAddLocation = (locationData: Omit<Location, 'id'>) => {
     const newLocation: Location = {
