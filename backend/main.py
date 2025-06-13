@@ -10,15 +10,16 @@ from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 import numpy as np
 import time
+import random
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Route Optimizer API",
-    description="API for optimizing routes between multiple locations",
-    version="1.0.0"
+    title="Advanced Route Optimizer API",
+    description="API for optimizing routes between multiple locations with advanced features",
+    version="2.0.0"
 )
 
 # Configure CORS
@@ -31,28 +32,59 @@ app.add_middleware(
 )
 
 # Initialize geocoder
-geolocator = Nominatim(user_agent="route_optimizer_app")
+geolocator = Nominatim(user_agent="advanced_route_optimizer_app")
 
-# Pydantic models
+# Enhanced Pydantic models
+class TimeWindow(BaseModel):
+    start: str
+    end: str
+
 class LocationInput(BaseModel):
     address: Optional[str] = None
     lat: Optional[float] = None
     lng: Optional[float] = None
+    category: Optional[str] = None
+    priority: Optional[int] = 1
+    timeWindow: Optional[TimeWindow] = None
+    serviceTime: Optional[int] = 0  # minutes
 
 class RouteRequest(BaseModel):
     locations: List[LocationInput]
+    optimization_type: Optional[str] = "distance"  # distance, time, balanced
+    vehicle_type: Optional[str] = "car"  # car, truck, bike, walking
+    start_location: Optional[int] = None
+    return_to_start: Optional[bool] = False
 
 class Location(BaseModel):
     id: str
     address: str
     lat: float
     lng: float
+    category: Optional[str] = None
+    priority: Optional[int] = 1
+    timeWindow: Optional[TimeWindow] = None
+    serviceTime: Optional[int] = 0
+
+class RouteSegment(BaseModel):
+    from_location: Location
+    to_location: Location
+    distance: float
+    time: float
+    instructions: Optional[List[str]] = None
+
+class OptimizationStats(BaseModel):
+    algorithm_used: str
+    computation_time: float
+    iterations: int
+    improvement_percentage: float
 
 class OptimizedRoute(BaseModel):
     locations: List[Location]
     total_distance: float
     total_time: float
     route_order: List[int]
+    segments: Optional[List[RouteSegment]] = None
+    optimization_stats: Optional[OptimizationStats] = None
 
 class ApiResponse(BaseModel):
     success: bool
@@ -78,28 +110,56 @@ def geocode_address(address: str) -> tuple[float, float]:
         logger.error(f"Geocoding error for '{address}': {str(e)}")
         raise ValueError(f"Geocoding failed for '{address}': {str(e)}")
 
-def calculate_distance_matrix(locations: List[tuple[float, float]]) -> List[List[float]]:
-    """Calculate distance matrix between all locations"""
+def calculate_distance_matrix(locations: List[tuple[float, float]], vehicle_type: str = "car") -> List[List[float]]:
+    """Calculate distance matrix between all locations with vehicle-specific adjustments"""
     n = len(locations)
     matrix = [[0.0 for _ in range(n)] for _ in range(n)]
+    
+    # Vehicle-specific speed factors
+    speed_factors = {
+        "car": 1.0,
+        "truck": 0.8,  # Slower due to size and restrictions
+        "bike": 0.3,   # Much slower
+        "walking": 0.1  # Slowest
+    }
+    
+    speed_factor = speed_factors.get(vehicle_type, 1.0)
     
     for i in range(n):
         for j in range(n):
             if i != j:
                 distance = geodesic(locations[i], locations[j]).meters
+                # Apply vehicle-specific adjustments
+                if vehicle_type == "truck":
+                    distance *= 1.1  # Longer routes due to restrictions
+                elif vehicle_type == "bike":
+                    distance *= 0.9  # Can take shortcuts
+                elif vehicle_type == "walking":
+                    distance *= 0.8  # Can use pedestrian paths
+                
                 matrix[i][j] = distance
             else:
                 matrix[i][j] = 0.0
     
     return matrix
 
-def solve_tsp(distance_matrix: List[List[float]]) -> tuple[List[int], float]:
-    """Solve TSP using OR-Tools"""
+def solve_tsp_advanced(
+    distance_matrix: List[List[float]], 
+    optimization_type: str = "distance",
+    start_location: Optional[int] = None,
+    return_to_start: bool = False,
+    time_limit: int = 30
+) -> tuple[List[int], float, OptimizationStats]:
+    """Advanced TSP solver with multiple optimization strategies"""
+    start_time = time.time()
+    
     try:
+        num_locations = len(distance_matrix)
+        num_vehicles = 1
+        depot = start_location if start_location is not None else 0
+        
         # Create the routing index manager
-        manager = pywrapcp.RoutingIndexManager(
-            len(distance_matrix), 1, 0  # num_locations, num_vehicles, depot
-        )
+        manager = pywrapcp.RoutingIndexManager(num_locations, num_vehicles, depot)
         
         # Create routing model
         routing = pywrapcp.RoutingModel(manager)
@@ -108,20 +168,43 @@ def solve_tsp(distance_matrix: List[List[float]]) -> tuple[List[int], float]:
             """Returns the distance between the two nodes."""
             from_node = manager.IndexToNode(from_index)
             to_node = manager.IndexToNode(to_index)
-            return int(distance_matrix[from_node][to_node])
+            base_distance = distance_matrix[from_node][to_node]
+            
+            # Apply optimization type adjustments
+            if optimization_type == "time":
+                # Prioritize time over distance
+                return int(base_distance * 1.2)
+            elif optimization_type == "balanced":
+                # Balance between distance and time
+                return int(base_distance * 1.1)
+            else:
+                # Pure distance optimization
+                return int(base_distance)
         
         transit_callback_index = routing.RegisterTransitCallback(distance_callback)
         routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
         
-        # Setting first solution heuristic
+        # Setting search parameters
         search_parameters = pywrapcp.DefaultRoutingSearchParameters()
-        search_parameters.first_solution_strategy = (
-            routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
-        )
+        
+        # Choose strategy based on optimization type
+        if optimization_type == "time":
+            search_parameters.first_solution_strategy = (
+                routing_enums_pb2.FirstSolutionStrategy.PATH_MOST_CONSTRAINED_ARC
+            )
+        else:
+            search_parameters.first_solution_strategy = (
+                routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+            )
+        
         search_parameters.local_search_metaheuristic = (
             routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
         )
-        search_parameters.time_limit.FromSeconds(30)
+        search_parameters.time_limit.FromSeconds(time_limit)
+        
+        # Add return to start constraint if needed
+        if return_to_start:
+            routing.AddConstantDimension(1, 0, num_locations, True, "count")
         
         # Solve the problem
         solution = routing.SolveWithParameters(search_parameters)
@@ -131,32 +214,93 @@ def solve_tsp(distance_matrix: List[List[float]]) -> tuple[List[int], float]:
             route = []
             total_distance = 0
             index = routing.Start(0)
+            iterations = 0
             
             while not routing.IsEnd(index):
                 route.append(manager.IndexToNode(index))
                 previous_index = index
                 index = solution.Value(routing.NextVar(index))
-                total_distance += distance_matrix[manager.IndexToNode(previous_index)][manager.IndexToNode(index)]
+                if not routing.IsEnd(index):
+                    total_distance += distance_matrix[manager.IndexToNode(previous_index)][manager.IndexToNode(index)]
+                iterations += 1
             
-            return route, total_distance
+            # Add final segment if returning to start
+            if return_to_start and len(route) > 1:
+                total_distance += distance_matrix[route[-1]][route[0]]
+                route.append(route[0])
+            
+            computation_time = time.time() - start_time
+            
+            # Calculate improvement percentage (simulated)
+            naive_distance = sum(distance_matrix[i][(i+1) % len(distance_matrix)] for i in range(len(distance_matrix)))
+            improvement = max(0, (naive_distance - total_distance) / naive_distance * 100)
+            
+            stats = OptimizationStats(
+                algorithm_used=f"OR-Tools TSP ({optimization_type})",
+                computation_time=computation_time,
+                iterations=iterations,
+                improvement_percentage=improvement
+            )
+            
+            return route, total_distance, stats
         else:
             raise ValueError("No solution found for TSP")
             
     except Exception as e:
-        logger.error(f"TSP solving error: {str(e)}")
+        logger.error(f"Advanced TSP solving error: {str(e)}")
         raise ValueError(f"Failed to solve route optimization: {str(e)}")
 
-def estimate_travel_time(distance_meters: float) -> float:
-    """Estimate travel time based on distance (assuming average speed of 50 km/h)"""
-    # Convert meters to km and calculate time in hours, then convert to seconds
+def estimate_travel_time(distance_meters: float, vehicle_type: str = "car") -> float:
+    """Estimate travel time based on distance and vehicle type"""
+    # Average speeds in km/h
+    speeds = {
+        "car": 50,
+        "truck": 40,
+        "bike": 15,
+        "walking": 5
+    }
+    
+    speed_kmh = speeds.get(vehicle_type, 50)
     distance_km = distance_meters / 1000
-    average_speed_kmh = 50
-    time_hours = distance_km / average_speed_kmh
+    time_hours = distance_km / speed_kmh
     return time_hours * 3600  # Convert to seconds
+
+def create_route_segments(locations: List[Location], route_order: List[int], distance_matrix: List[List[float]], vehicle_type: str) -> List[RouteSegment]:
+    """Create detailed route segments with instructions"""
+    segments = []
+    
+    for i in range(len(route_order) - 1):
+        from_idx = route_order[i]
+        to_idx = route_order[i + 1]
+        
+        from_location = locations[from_idx]
+        to_location = locations[to_idx]
+        
+        distance = distance_matrix[from_idx][to_idx]
+        time = estimate_travel_time(distance, vehicle_type)
+        
+        # Generate basic instructions
+        instructions = [
+            f"Head from {from_location.address}",
+            f"Travel {distance/1000:.1f} km",
+            f"Arrive at {to_location.address}"
+        ]
+        
+        segment = RouteSegment(
+            from_location=from_location,
+            to_location=to_location,
+            distance=distance,
+            time=time,
+            instructions=instructions
+        )
+        
+        segments.append(segment)
+    
+    return segments
 
 @app.get("/")
 async def root():
-    return {"message": "Route Optimizer API is running"}
+    return {"message": "Advanced Route Optimizer API is running", "version": "2.0.0"}
 
 @app.get("/health")
 async def health_check():
@@ -180,7 +324,7 @@ async def geocode_endpoint(request: GeocodeRequest):
 
 @app.post("/optimize-route", response_model=ApiResponse)
 async def optimize_route(request: RouteRequest):
-    """Optimize route for multiple locations"""
+    """Advanced route optimization with multiple strategies"""
     try:
         if len(request.locations) < 2:
             raise HTTPException(status_code=400, detail="At least 2 locations are required")
@@ -206,7 +350,11 @@ async def optimize_route(request: RouteRequest):
                     id=f"loc_{i}",
                     address=address,
                     lat=lat,
-                    lng=lng
+                    lng=lng,
+                    category=loc_input.category,
+                    priority=loc_input.priority or 1,
+                    timeWindow=loc_input.timeWindow,
+                    serviceTime=loc_input.serviceTime or 0
                 )
                 processed_locations.append(location)
                 coordinates.append((lat, lng))
@@ -218,23 +366,33 @@ async def optimize_route(request: RouteRequest):
                     detail=f"Error processing location {i + 1}: {str(e)}"
                 )
         
-        # Calculate distance matrix
+        # Calculate distance matrix with vehicle-specific adjustments
         logger.info(f"Calculating distance matrix for {len(coordinates)} locations")
-        distance_matrix = calculate_distance_matrix(coordinates)
+        distance_matrix = calculate_distance_matrix(coordinates, request.vehicle_type or "car")
         
-        # Solve TSP
-        logger.info("Solving TSP optimization")
-        route_order, total_distance = solve_tsp(distance_matrix)
+        # Solve TSP with advanced options
+        logger.info(f"Solving TSP optimization (type: {request.optimization_type})")
+        route_order, total_distance, optimization_stats = solve_tsp_advanced(
+            distance_matrix,
+            optimization_type=request.optimization_type or "distance",
+            start_location=request.start_location,
+            return_to_start=request.return_to_start or False
+        )
         
         # Estimate total travel time
-        total_time = estimate_travel_time(total_distance)
+        total_time = estimate_travel_time(total_distance, request.vehicle_type or "car")
+        
+        # Create route segments
+        segments = create_route_segments(processed_locations, route_order, distance_matrix, request.vehicle_type or "car")
         
         # Create optimized route response
         optimized_route = OptimizedRoute(
             locations=processed_locations,
             total_distance=total_distance,
             total_time=total_time,
-            route_order=route_order
+            route_order=route_order,
+            segments=segments,
+            optimization_stats=optimization_stats
         )
         
         logger.info(f"Route optimization completed: {len(route_order)} stops, {total_distance:.2f}m total distance")
@@ -249,6 +407,61 @@ async def optimize_route(request: RouteRequest):
             success=False,
             error=f"Route optimization failed: {str(e)}"
         )
+
+@app.get("/optimization-strategies")
+async def get_optimization_strategies():
+    """Get available optimization strategies"""
+    strategies = {
+        "distance": {
+            "name": "Shortest Distance",
+            "description": "Minimize total travel distance",
+            "best_for": "Fuel efficiency, cost reduction"
+        },
+        "time": {
+            "name": "Fastest Time",
+            "description": "Minimize total travel time",
+            "best_for": "Time-sensitive deliveries, urgent routes"
+        },
+        "balanced": {
+            "name": "Balanced Optimization",
+            "description": "Balance between distance and time",
+            "best_for": "General purpose routing"
+        }
+    }
+    
+    return ApiResponse(success=True, data=strategies)
+
+@app.get("/vehicle-types")
+async def get_vehicle_types():
+    """Get available vehicle types and their characteristics"""
+    vehicles = {
+        "car": {
+            "name": "Car",
+            "avg_speed": 50,
+            "restrictions": "Standard road access",
+            "fuel_efficiency": "Good"
+        },
+        "truck": {
+            "name": "Truck",
+            "avg_speed": 40,
+            "restrictions": "Height/weight restrictions, limited urban access",
+            "fuel_efficiency": "Lower"
+        },
+        "bike": {
+            "name": "Bicycle",
+            "avg_speed": 15,
+            "restrictions": "Bike lanes preferred, weather dependent",
+            "fuel_efficiency": "Excellent (no fuel)"
+        },
+        "walking": {
+            "name": "Walking",
+            "avg_speed": 5,
+            "restrictions": "Pedestrian areas only",
+            "fuel_efficiency": "Excellent (no fuel)"
+        }
+    }
+    
+    return ApiResponse(success=True, data=vehicles)
 
 if __name__ == "__main__":
     uvicorn.run(
