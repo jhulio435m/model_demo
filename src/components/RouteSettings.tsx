@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Settings, Car, Truck, Bike, User, Clock, Target, MapPin } from 'lucide-react';
 import { RouteRequest } from '../types';
+import { useTranslation } from 'react-i18next';
 
 interface RouteSettingsProps {
   settings: Partial<RouteRequest>;
@@ -13,6 +14,7 @@ export const RouteSettings: React.FC<RouteSettingsProps> = ({
   onSettingsChange,
   locations,
 }) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
   const vehicleTypes = [
@@ -29,14 +31,14 @@ export const RouteSettings: React.FC<RouteSettingsProps> = ({
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow-md">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+        className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
       >
         <div className="flex items-center gap-3">
           <Settings className="text-gray-600" size={20} />
-          <span className="font-medium">Route Settings</span>
+          <span className="font-medium">{t('route_settings')}</span>
         </div>
         <div className={`transform transition-transform ${isOpen ? 'rotate-180' : ''}`}>
           ▼
@@ -49,7 +51,7 @@ export const RouteSettings: React.FC<RouteSettingsProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
               <Target className="inline mr-2" size={16} />
-              Optimization Goal
+              {t('optimization_goal')}
             </label>
             <div className="space-y-2">
               {optimizationTypes.map((type) => (
@@ -77,7 +79,7 @@ export const RouteSettings: React.FC<RouteSettingsProps> = ({
           {/* Vehicle Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Vehicle Type
+              {t('vehicle_type')}
             </label>
             <div className="grid grid-cols-2 gap-2">
               {vehicleTypes.map((vehicle) => {
@@ -107,7 +109,7 @@ export const RouteSettings: React.FC<RouteSettingsProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <MapPin className="inline mr-2" size={16} />
-              Starting Location
+              {t('starting_location')}
             </label>
             <select
               value={settings.start_location ?? ''}
@@ -139,7 +141,7 @@ export const RouteSettings: React.FC<RouteSettingsProps> = ({
                 className="rounded"
               />
               <div>
-                <div className="font-medium text-sm">Return to Starting Point</div>
+                <div className="font-medium text-sm">{t('return_to_start')}</div>
                 <div className="text-xs text-gray-500">End the route at the starting location</div>
               </div>
             </label>

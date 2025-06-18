@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { MapPin, Calculator, AlertCircle, Settings, BarChart3, Folder } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { MapPin, Calculator, AlertCircle, Settings, BarChart3, Folder, Moon, Sun } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 import { LocationInput } from './components/LocationInput';
 import { RouteMap } from './components/RouteMap';
@@ -10,8 +10,20 @@ import { SavedRoutes } from './components/SavedRoutes';
 import { RouteAnalytics } from './components/RouteAnalytics';
 import { routeService } from './services/api';
 import { Location, OptimizedRoute, RouteRequest } from './types';
+import { useTranslation } from 'react-i18next';
 
 function App() {
+  const { t, i18n } = useTranslation();
+  const [language, setLanguage] = useState('en');
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    i18n.changeLanguage(language);
+  }, [language, i18n]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode);
+  }, [darkMode]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [optimizedRoute, setOptimizedRoute] = useState<OptimizedRoute | null>(null);
   const [comparisonRoutes, setComparisonRoutes] = useState<OptimizedRoute[]>([]);
@@ -55,7 +67,7 @@ function App() {
 
   const handleCalculateRoute = async () => {
     if (locations.length < 2) {
-      setError('Please add at least 2 locations to calculate a route');
+      setError(t('at_least_two'));
       return;
     }
 
@@ -99,14 +111,14 @@ function App() {
   };
 
   const tabs = [
-    { id: 'route', label: 'Route Planning', icon: MapPin },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'comparison', label: 'Comparison', icon: Settings },
-    { id: 'saved', label: 'Saved Routes', icon: Folder },
+    { id: 'route', label: t('route_planning'), icon: MapPin },
+    { id: 'analytics', label: t('analytics'), icon: BarChart3 },
+    { id: 'comparison', label: t('comparison'), icon: Settings },
+    { id: 'saved', label: t('saved_routes'), icon: Folder },
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       <Toaster position="top-right" />
       
       {/* Header */}
@@ -118,9 +130,25 @@ function App() {
                 <MapPin className="text-white" size={24} />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Advanced Route Optimizer</h1>
-                <p className="text-sm text-gray-500">Intelligent route planning with analytics and optimization</p>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{t('route_optimizer_title')}</h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('subtitle')}</p>
               </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <select
+                value={language}
+                onChange={e => setLanguage(e.target.value)}
+                className="text-sm border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="en">EN</option>
+                <option value="es">ES</option>
+              </select>
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="p-2 rounded-md bg-gray-100 dark:bg-gray-700"
+              >
+                {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
             </div>
           </div>
         </div>
@@ -185,14 +213,14 @@ function App() {
                   ) : (
                     <>
                       <Calculator size={20} />
-                      Calculate Optimal Route
+                      {t('calculate_route')}
                     </>
                   )}
                 </button>
                 
                 {locations.length < 2 && (
                   <p className="text-sm text-gray-500 mt-2 text-center">
-                    Add at least 2 locations to calculate route
+                    {t('at_least_two')}
                   </p>
                 )}
               </div>
@@ -203,7 +231,7 @@ function App() {
                   <div className="flex items-start gap-3">
                     <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
                     <div>
-                      <h3 className="font-medium text-red-800 mb-1">Error</h3>
+                      <h3 className="font-medium text-red-800 mb-1">{t('error')}</h3>
                       <p className="text-sm text-red-700">{error}</p>
                       {error.includes('Backend server') && (
                         <div className="mt-2 text-xs text-red-600">
@@ -224,8 +252,8 @@ function App() {
 
             {/* Right Side - Map */}
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold mb-4">Route Map</h2>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-semibold mb-4">{t('route_map')}</h2>
                 <div className="h-96 lg:h-[600px]">
                   <RouteMap route={optimizedRoute} isLoading={isLoading} />
                 </div>
@@ -254,10 +282,10 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t mt-12">
+      <footer className="bg-white dark:bg-gray-800 border-t mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="text-center text-sm text-gray-500">
-            <p>Advanced Route Optimizer - Built with React, TypeScript, and Leaflet</p>
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+            <p>{t('route_optimizer_title')} - Built with React, TypeScript, and Leaflet</p>
             <p className="mt-1">Powered by OpenStreetMap and Python FastAPI backend</p>
           </div>
         </div>

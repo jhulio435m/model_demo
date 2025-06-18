@@ -82,7 +82,7 @@ export const SavedRoutes: React.FC<SavedRoutesProps> = ({ currentRoute, onLoadRo
   });
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-xl font-semibold flex items-center gap-2">
           <Folder className="text-blue-600" size={24} />
@@ -202,7 +202,7 @@ export const SavedRoutes: React.FC<SavedRoutesProps> = ({ currentRoute, onLoadRo
       {/* Save Route Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
             <h3 className="text-lg font-semibold mb-4">Save Route</h3>
             
             <div className="space-y-4">
