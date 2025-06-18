@@ -2,6 +2,8 @@
 
 A complete web application for optimizing routes between multiple locations. The system calculates the most efficient route using the Traveling Salesman Problem (TSP) algorithm and displays results on an interactive map.
 
+For a quick start guide, see [USAGE.md](usage.md).
+
 ## Features
 
 - **Interactive Web Interface**: Modern React-based frontend with responsive design
