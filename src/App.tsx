@@ -40,6 +40,19 @@ function App() {
     localStorage.setItem("darkMode", darkMode.toString());
   }, [darkMode]);
 
+  const [routeSettings, setRouteSettings] = useState<Partial<RouteRequest>>(
+    () => {
+      const saved = localStorage.getItem("routeSettings");
+      return saved
+        ? JSON.parse(saved)
+        : {
+            optimization_type: "distance",
+            vehicle_type: "car",
+            return_to_start: false,
+          };
+    },
+  );
+
   useEffect(() => {
     localStorage.setItem("routeSettings", JSON.stringify(routeSettings));
   }, [routeSettings]);
@@ -55,19 +68,6 @@ function App() {
   const [activeTab, setActiveTab] = useState<
     "route" | "analytics" | "comparison" | "saved"
   >("route");
-  const [routeSettings, setRouteSettings] = useState<Partial<RouteRequest>>(
-    () => {
-      const saved = localStorage.getItem("routeSettings");
-      return saved
-        ? JSON.parse(saved)
-        : {
-            optimization_type: "distance",
-            vehicle_type: "car",
-            return_to_start: false,
-          };
-    },
-  );
-
   // Use crypto API for better randomness
   const generateId = () =>
     typeof crypto !== "undefined" && crypto.randomUUID
