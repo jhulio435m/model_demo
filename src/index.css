@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+.dark {
+  @apply bg-gray-900 text-gray-100;
+}
+
 /* Leaflet CSS overrides */
 .leaflet-container {
   height: 100%;

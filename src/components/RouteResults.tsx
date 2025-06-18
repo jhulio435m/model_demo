@@ -54,7 +54,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({ route, isLoading }) 
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
         <div className="flex items-center justify-center h-32">
           <div className="text-center">
             <div className="loading-spinner mx-auto mb-4"></div>
@@ -67,7 +67,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({ route, isLoading }) 
 
   if (!route) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold mb-4">Route Results</h2>
         <div className="text-center text-gray-500 py-8">
           <Route size={48} className="mx-auto mb-4 text-gray-300" />
@@ -96,7 +96,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({ route, isLoading }) 
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Route Results</h2>
         <div className="flex gap-2">

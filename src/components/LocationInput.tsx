@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Plus, Upload, X } from 'lucide-react';
 import Papa from 'papaparse';
 import { Location } from '../types';
+import { useTranslation } from 'react-i18next';
+import UTMLatLng from 'utm-latlng';
 
 interface LocationInputProps {
   locations: Location[];
@@ -16,9 +18,13 @@ export const LocationInput: React.FC<LocationInputProps> = ({
   onRemoveLocation,
   onClearAll,
 }) => {
+  const { t } = useTranslation();
+  const utmConverter = new UTMLatLng();
+
   const [address, setAddress] = useState('');
   const [coordinates, setCoordinates] = useState({ lat: '', lng: '' });
-  const [inputMode, setInputMode] = useState<'address' | 'coordinates'>('address');
+  const [utm, setUtm] = useState({ easting: '', northing: '', zoneNumber: '', zoneLetter: '' });
+  const [inputMode, setInputMode] = useState<'address' | 'coordinates' | 'utm'>('address');
 
   const handleAddLocation = () => {
     if (inputMode === 'address' && address.trim()) {
@@ -31,18 +37,48 @@ export const LocationInput: React.FC<LocationInputProps> = ({
     } else if (inputMode === 'coordinates' && coordinates.lat && coordinates.lng) {
       const lat = parseFloat(coordinates.lat);
       const lng = parseFloat(coordinates.lng);
-      
+
       if (isNaN(lat) || isNaN(lng)) {
         alert('Please enter valid coordinates');
         return;
       }
-      
+
       onAddLocation({
         address: `${lat}, ${lng}`,
         lat,
         lng,
       });
       setCoordinates({ lat: '', lng: '' });
+    } else if (
+      inputMode === 'utm' &&
+      utm.easting &&
+      utm.northing &&
+      utm.zoneNumber &&
+      utm.zoneLetter
+    ) {
+      const easting = parseFloat(utm.easting);
+      const northing = parseFloat(utm.northing);
+      const zoneNumber = parseInt(utm.zoneNumber, 10);
+      const zoneLetter = utm.zoneLetter.toUpperCase() as any;
+
+      if (isNaN(easting) || isNaN(northing) || isNaN(zoneNumber)) {
+        alert('Please enter valid UTM coordinates');
+        return;
+      }
+
+      const { lat, lng } = utmConverter.convertUtmToLatLng(
+        easting,
+        northing,
+        zoneNumber,
+        zoneLetter
+      ) as { lat: number; lng: number };
+
+      onAddLocation({
+        address: `${easting},${northing} (${zoneNumber}${zoneLetter})`,
+        lat,
+        lng,
+      });
+      setUtm({ easting: '', northing: '', zoneNumber: '', zoneLetter: '' });
     }
   };
 
@@ -83,11 +119,11 @@ export const LocationInput: React.FC<LocationInputProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-semibold mb-4">Add Locations</h2>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <h2 className="text-xl font-semibold mb-4">{t('add_locations')}</h2>
       
       {/* Input Mode Toggle */}
-      <div className="flex mb-4 bg-gray-100 rounded-lg p-1">
+      <div className="flex mb-4 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
         <button
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
             inputMode === 'address'
@@ -96,7 +132,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({
           }`}
           onClick={() => setInputMode('address')}
         >
-          Address
+          {t('address')}
         </button>
         <button
           className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
@@ -106,7 +142,17 @@ export const LocationInput: React.FC<LocationInputProps> = ({
           }`}
           onClick={() => setInputMode('coordinates')}
         >
-          Coordinates
+          {t('coordinates')}
+        </button>
+        <button
+          className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+            inputMode === 'utm'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-600 hover:text-gray-800'
+          }`}
+          onClick={() => setInputMode('utm')}
+        >
+          {t('utm')}
         </button>
       </div>
 
@@ -118,24 +164,24 @@ export const LocationInput: React.FC<LocationInputProps> = ({
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Enter address (e.g., 123 Main St, City, State)"
+            placeholder={t('address')}
             className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             onClick={handleAddLocation}
             disabled={!address.trim()}
-            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 w-10"
           >
             <Plus size={20} />
           </button>
         </div>
-      ) : (
+      ) : inputMode === 'coordinates' ? (
         <div className="flex gap-2 mb-4">
           <input
             type="number"
             value={coordinates.lat}
             onChange={(e) => setCoordinates({ ...coordinates, lat: e.target.value })}
-            placeholder="Latitude"
+            placeholder={t('latitude')}
             step="any"
             className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
@@ -143,14 +189,52 @@ export const LocationInput: React.FC<LocationInputProps> = ({
             type="number"
             value={coordinates.lng}
             onChange={(e) => setCoordinates({ ...coordinates, lng: e.target.value })}
-            placeholder="Longitude"
+            placeholder={t('longitude')}
             step="any"
             className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             onClick={handleAddLocation}
             disabled={!coordinates.lat || !coordinates.lng}
-            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 w-10"
+          >
+            <Plus size={20} />
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <input
+            type="number"
+            value={utm.easting}
+            onChange={e => setUtm({ ...utm, easting: e.target.value })}
+            placeholder={t('easting')}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            type="number"
+            value={utm.northing}
+            onChange={e => setUtm({ ...utm, northing: e.target.value })}
+            placeholder={t('northing')}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            type="number"
+            value={utm.zoneNumber}
+            onChange={e => setUtm({ ...utm, zoneNumber: e.target.value })}
+            placeholder={t('zone_number')}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <input
+            type="text"
+            value={utm.zoneLetter}
+            onChange={e => setUtm({ ...utm, zoneLetter: e.target.value })}
+            placeholder={t('zone_letter')}
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            onClick={handleAddLocation}
+            disabled={!utm.easting || !utm.northing || !utm.zoneNumber || !utm.zoneLetter}
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 w-full col-span-2"
           >
             <Plus size={20} />
           </button>
@@ -161,7 +245,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({
       <div className="mb-4">
         <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 hover:text-gray-800">
           <Upload size={16} />
-          Upload CSV file
+          {t('upload_csv')}
           <input
             type="file"
             accept=".csv"
@@ -170,7 +254,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({
           />
         </label>
         <p className="text-xs text-gray-500 mt-1">
-          CSV should have columns: address, lat, lng
+          {t('csv_help')}
         </p>
       </div>
 
@@ -178,12 +262,12 @@ export const LocationInput: React.FC<LocationInputProps> = ({
       {locations.length > 0 && (
         <div>
           <div className="flex justify-between items-center mb-3">
-            <h3 className="font-medium">Locations ({locations.length})</h3>
+            <h3 className="font-medium">{t('locations')} ({locations.length})</h3>
             <button
               onClick={onClearAll}
               className="text-red-600 hover:text-red-800 text-sm"
             >
-              Clear All
+              {t('clear_all')}
             </button>
           </div>
           
@@ -191,7 +275,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({
             {locations.map((location, index) => (
               <div
                 key={location.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-md"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
