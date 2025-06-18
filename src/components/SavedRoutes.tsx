@@ -6,7 +6,7 @@ import { SavedRoute, OptimizedRoute } from '../types';
 
 interface SavedRoutesProps {
   currentRoute: OptimizedRoute | null;
-  onLoadRoute: (route: OptimizedRoute) => void;
+  onLoadRoute: (_route: OptimizedRoute) => void;
 }
 
 export const SavedRoutes: React.FC<SavedRoutesProps> = ({ currentRoute, onLoadRoute }) => {

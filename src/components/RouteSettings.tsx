@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 interface RouteSettingsProps {
   settings: Partial<RouteRequest>;
-  onSettingsChange: (settings: Partial<RouteRequest>) => void;
+  onSettingsChange: (_settings: Partial<RouteRequest>) => void;
   locations: any[];
 }
 

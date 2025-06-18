@@ -7,8 +7,8 @@ import UTMLatLng from 'utm-latlng';
 
 interface LocationInputProps {
   locations: Location[];
-  onAddLocation: (location: Omit<Location, 'id'>) => void;
-  onRemoveLocation: (id: string) => void;
+  onAddLocation: (_location: Omit<Location, 'id'>) => void;
+  onRemoveLocation: (_id: string) => void;
   onClearAll: () => void;
 }
 
@@ -90,7 +90,7 @@ export const LocationInput: React.FC<LocationInputProps> = ({
       header: true,
       complete: (results) => {
         const data = results.data as any[];
-        data.forEach((row, index) => {
+        data.forEach((row, _index) => {
           if (row.address || (row.lat && row.lng)) {
             const lat = row.lat ? parseFloat(row.lat) : 0;
             const lng = row.lng ? parseFloat(row.lng) : 0;

@@ -8,9 +8,7 @@ from geopy.geocoders import Nominatim, ArcGIS
 from geopy.distance import geodesic
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
-import numpy as np
 import time
-import random
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
