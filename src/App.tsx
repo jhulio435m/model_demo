@@ -56,7 +56,6 @@ function App() {
   useEffect(() => {
     localStorage.setItem("routeSettings", JSON.stringify(routeSettings));
   }, [routeSettings]);
-
   const [locations, setLocations] = useState<Location[]>([]);
   const [optimizedRoute, setOptimizedRoute] = useState<OptimizedRoute | null>(
     null,
