@@ -40,7 +40,6 @@ function App() {
     localStorage.setItem("darkMode", darkMode.toString());
   }, [darkMode]);
 
-
   const [routeSettings, setRouteSettings] = useState<Partial<RouteRequest>>(
     () => {
       const saved = localStorage.getItem("routeSettings");
