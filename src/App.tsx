@@ -24,11 +24,14 @@ import { useTranslation } from "react-i18next";
 function App() {
   const { t, i18n } = useTranslation();
   const [language, setLanguage] = useState(
-    () => localStorage.getItem("lang") || "en",
+    () => localStorage.getItem("lang") || "es",
   );
-  const [darkMode, setDarkMode] = useState(
-    () => localStorage.getItem("darkMode") === "true",
-  );
+  const [darkMode, setDarkMode] = useState(() => {
+    const stored = localStorage.getItem("darkMode");
+    return stored
+      ? stored === "true"
+      : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
 
   useEffect(() => {
     i18n.changeLanguage(language);

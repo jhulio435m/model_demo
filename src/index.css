@@ -6,6 +6,10 @@
   @apply bg-gray-900 text-gray-100;
 }
 
+html.dark {
+  color-scheme: dark;
+}
+
 /* Leaflet CSS overrides */
 .leaflet-container {
   height: 100%;

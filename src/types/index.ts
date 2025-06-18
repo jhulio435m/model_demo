@@ -22,8 +22,8 @@ export interface OptimizedRoute {
 }
 
 export interface RouteSegment {
-  from: Location;
-  to: Location;
+  from_location: Location;
+  to_location: Location;
   distance: number;
   time: number;
   instructions?: string[];
