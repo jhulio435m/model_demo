@@ -14,11 +14,12 @@ import { useTranslation } from 'react-i18next';
 
 function App() {
   const { t, i18n } = useTranslation();
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState(() => localStorage.getItem('lang') || 'en');
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     i18n.changeLanguage(language);
+    localStorage.setItem('lang', language);
   }, [language, i18n]);
 
   useEffect(() => {

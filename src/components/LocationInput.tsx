@@ -35,8 +35,8 @@ export const LocationInput: React.FC<LocationInputProps> = ({
       });
       setAddress('');
     } else if (inputMode === 'coordinates' && coordinates.lat && coordinates.lng) {
-      const lat = parseFloat(coordinates.lat);
-      const lng = parseFloat(coordinates.lng);
+      const lat = parseFloat(coordinates.lat.replace(',', '.'));
+      const lng = parseFloat(coordinates.lng.replace(',', '.'));
 
       if (isNaN(lat) || isNaN(lng)) {
         alert('Please enter valid coordinates');
@@ -178,19 +178,17 @@ export const LocationInput: React.FC<LocationInputProps> = ({
       ) : inputMode === 'coordinates' ? (
         <div className="flex gap-2 mb-4">
           <input
-            type="number"
+            type="text"
             value={coordinates.lat}
             onChange={(e) => setCoordinates({ ...coordinates, lat: e.target.value })}
             placeholder={t('latitude')}
-            step="any"
             className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <input
-            type="number"
+            type="text"
             value={coordinates.lng}
             onChange={(e) => setCoordinates({ ...coordinates, lng: e.target.value })}
             placeholder={t('longitude')}
-            step="any"
             className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
