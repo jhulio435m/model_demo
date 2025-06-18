@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Download, MapPin, Clock, Route } from 'lucide-react';
 import Papa from 'papaparse';
 import html2pdf from 'html2pdf.js';
@@ -10,6 +11,7 @@ interface RouteResultsProps {
 }
 
 export const RouteResults: React.FC<RouteResultsProps> = ({ route, isLoading }) => {
+  const { t } = useTranslation();
   const exportToCSV = () => {
     if (!route) return;
 
@@ -54,11 +56,11 @@ export const RouteResults: React.FC<RouteResultsProps> = ({ route, isLoading }) 
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
         <div className="flex items-center justify-center h-32">
           <div className="text-center">
             <div className="loading-spinner mx-auto mb-4"></div>
-            <p className="text-gray-600">Calculating route...</p>
+            <p className="text-gray-600">{t('calculating_route')}</p>
           </div>
         </div>
       </div>
@@ -67,12 +69,12 @@ export const RouteResults: React.FC<RouteResultsProps> = ({ route, isLoading }) 
 
   if (!route) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-semibold mb-4">Route Results</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+        <h2 className="text-xl font-semibold mb-4">{t('route_results')}</h2>
         <div className="text-center text-gray-500 py-8">
           <Route size={48} className="mx-auto mb-4 text-gray-300" />
-          <p>No route calculated yet</p>
-          <p className="text-sm mt-2">Add locations and click "Calculate Route" to see results</p>
+          <p>{t('no_route_yet')}</p>
+          <p className="text-sm mt-2">{t('calculate_hint')}</p>
         </div>
       </div>
     );
@@ -96,9 +98,9 @@ export const RouteResults: React.FC<RouteResultsProps> = ({ route, isLoading }) 
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Route Results</h2>
+        <h2 className="text-xl font-semibold">{t('route_results')}</h2>
         <div className="flex gap-2">
           <button
             onClick={exportToCSV}
@@ -123,7 +125,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({ route, isLoading }) 
           <div className="bg-blue-50 p-4 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <MapPin className="text-blue-600" size={20} />
-              <span className="font-medium text-blue-800">Total Stops</span>
+              <span className="font-medium text-blue-800">{t('total_stops')}</span>
             </div>
             <p className="text-2xl font-bold text-blue-900">{route.locations.length}</p>
           </div>
@@ -131,7 +133,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({ route, isLoading }) 
           <div className="bg-green-50 p-4 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <Route className="text-green-600" size={20} />
-              <span className="font-medium text-green-800">Total Distance</span>
+              <span className="font-medium text-green-800">{t('total_distance')}</span>
             </div>
             <p className="text-2xl font-bold text-green-900">
               {formatDistance(route.total_distance)}
@@ -141,7 +143,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({ route, isLoading }) 
           <div className="bg-purple-50 p-4 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <Clock className="text-purple-600" size={20} />
-              <span className="font-medium text-purple-800">Estimated Time</span>
+              <span className="font-medium text-purple-800">{t('estimated_time')}</span>
             </div>
             <p className="text-2xl font-bold text-purple-900">
               {formatTime(route.total_time)}
@@ -151,7 +153,7 @@ export const RouteResults: React.FC<RouteResultsProps> = ({ route, isLoading }) 
 
         {/* Route Order */}
         <div>
-          <h3 className="font-semibold mb-4">Route Order</h3>
+          <h3 className="font-semibold mb-4">{t('route_order')}</h3>
           <div className="space-y-3 max-h-64 overflow-y-auto custom-scrollbar">
             {route.route_order.map((locationIndex, orderIndex) => {
               const location = route.locations[locationIndex];
@@ -174,12 +176,12 @@ export const RouteResults: React.FC<RouteResultsProps> = ({ route, isLoading }) 
                     <div className="flex items-center gap-2 mb-1">
                       {isStart && (
                         <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
-                          START
+                          {t('start')}
                         </span>
                       )}
                       {isEnd && (
                         <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full font-medium">
-                          END
+                          {t('end')}
                         </span>
                       )}
                       <span className="font-medium text-gray-900">

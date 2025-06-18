@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import uvicorn
 import logging
-from geopy.geocoders import Nominatim
+from geopy.geocoders import Nominatim, ArcGIS
 from geopy.distance import geodesic
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
@@ -31,8 +31,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize geocoder
-geolocator = Nominatim(user_agent="advanced_route_optimizer_app")
+# Initialize geocoders
+geolocator_osm = Nominatim(user_agent="advanced_route_optimizer_app")
+geolocator_arcgis = ArcGIS(timeout=10)
 
 # Enhanced Pydantic models
 class TimeWindow(BaseModel):
@@ -99,9 +100,14 @@ class GeocodeResponse(BaseModel):
     lng: float
 
 def geocode_address(address: str) -> tuple[float, float]:
-    """Geocode an address to coordinates"""
+    """Geocode an address to coordinates using multiple providers."""
     try:
-        location = geolocator.geocode(address, timeout=10)
+        # First attempt with OpenStreetMap's Nominatim
+        location = geolocator_osm.geocode(address, timeout=10)
+        if not location:
+            # Fallback to ArcGIS when Nominatim fails
+            location = geolocator_arcgis.geocode(address)
+
         if location:
             return location.latitude, location.longitude
         else:
