@@ -13,10 +13,12 @@ For a quick start guide, see [USAGE.md](usage.md).
 - **Export Options**: Export results to CSV or PDF formats
 - **Real-time Geocoding**: Automatic address-to-coordinates conversion
 - **Distance & Time Estimation**: Calculates total distance and estimated travel time
+- **Persistent Preferences**: Language, theme, and route settings saved in `localStorage`
 
 ## Technology Stack
 
 ### Frontend
+
 - **React 18** with TypeScript
 - **Tailwind CSS** for styling
 - **Leaflet.js** for interactive maps
@@ -25,6 +27,7 @@ For a quick start guide, see [USAGE.md](usage.md).
 - **html2pdf.js** for PDF export
 
 ### Backend
+
 - **Python FastAPI** for REST API
 - **OR-Tools** for TSP optimization
 - **GeoPy** for geocoding and distance calculations
@@ -57,6 +60,7 @@ route-optimizer/
 ## Installation & Setup
 
 ### Prerequisites
+
 - Node.js 18+ and npm
 - Python 3.8+
 - pip (Python package manager)
@@ -64,38 +68,45 @@ route-optimizer/
 ### Backend Setup
 
 1. **Navigate to backend directory**:
+
    ```bash
    cd backend
    ```
 
 2. **Create virtual environment** (recommended):
+
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. **Install Python dependencies**:
+
    ```bash
    pip install -r requirements.txt
    ```
 
 4. **Start the backend server**:
+
    ```bash
    python main.py
    ```
 
    The API will be available at `http://localhost:8000`
+
    - API documentation: `http://localhost:8000/docs`
    - Health check: `http://localhost:8000/health`
 
 ### Frontend Setup
 
 1. **Install dependencies**:
+
    ```bash
    npm install
    ```
 
 2. **Start the development server**:
+
    ```bash
    npm run dev
    ```
@@ -107,6 +118,7 @@ route-optimizer/
 ### Adding Locations
 
 1. **Manual Entry**:
+
    - Switch between "Address" and "Coordinates" input modes
    - Enter addresses (e.g., "123 Main St, New York, NY") or coordinates
    - Click the "+" button to add each location
@@ -131,22 +143,25 @@ route-optimizer/
 ## API Endpoints
 
 ### `POST /optimize-route`
+
 Optimize route for multiple locations.
 
 **Request Body**:
+
 ```json
 {
   "locations": [
     {
       "address": "123 Main St, New York, NY",
       "lat": 40.7128,
-      "lng": -74.0060
+      "lng": -74.006
     }
   ]
 }
 ```
 
 **Response**:
+
 ```json
 {
   "success": true,
@@ -159,10 +174,37 @@ Optimize route for multiple locations.
 }
 ```
 
+### `POST /optimize`
+
+Optimize a list of coordinates.
+
+**Request Body**:
+
+```json
+{
+  "locations": [
+    [40.7128, -74.006],
+    [34.0522, -118.2437]
+  ],
+  "return_to_start": true
+}
+```
+
+**Response**:
+
+```json
+{
+  "order": [0, 1],
+  "total_distance": 4500.0
+}
+```
+
 ### `POST /geocode`
+
 Convert address to coordinates.
 
 **Request Body**:
+
 ```json
 {
   "address": "123 Main St, New York, NY"
@@ -170,6 +212,7 @@ Convert address to coordinates.
 ```
 
 ### `GET /health`
+
 Health check endpoint.
 
 ## Algorithm Details
@@ -184,6 +227,7 @@ The application uses the **Traveling Salesman Problem (TSP)** algorithm implemen
 ## Development
 
 ### Frontend Development
+
 ```bash
 npm run dev          # Start development server
 npm run build        # Build for production
@@ -191,6 +235,7 @@ npm run lint         # Run ESLint
 ```
 
 ### Backend Development
+
 ```bash
 python main.py       # Start with auto-reload
 ```
@@ -206,16 +251,19 @@ python main.py       # Start with auto-reload
 ### Common Issues
 
 1. **Backend Connection Error**:
+
    - Ensure Python backend is running on port 8000
    - Check that all Python dependencies are installed
    - Verify CORS settings allow frontend origin
 
 2. **Geocoding Failures**:
+
    - Check internet connection for Nominatim API access
    - Verify address format is complete and accurate
    - Try using coordinates directly if geocoding fails
 
 3. **Route Optimization Timeout**:
+
    - Reduce number of locations (recommended: < 20 for optimal performance)
    - Check that all coordinates are valid
 
@@ -244,6 +292,7 @@ This project is open source and available under the MIT License.
 ## Support
 
 For issues and questions:
+
 1. Check the troubleshooting section
 2. Review API documentation at `http://localhost:8000/docs`
 3. Check browser console and backend logs for error details
