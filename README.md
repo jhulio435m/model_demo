@@ -1,153 +1,233 @@
-# Route Optimizer Web Application
+# Advanced Route Optimizer Web Application
 
-A complete web application for optimizing routes between multiple locations. The system calculates the most efficient route using the Traveling Salesman Problem (TSP) algorithm and displays results on an interactive map.
+A comprehensive web application for optimizing routes between multiple locations using advanced algorithms. The system calculates the most efficient route using the Traveling Salesman Problem (TSP) algorithm and displays results on an interactive map with detailed analytics.
 
-For a quick start guide, see [USAGE.md](usage.md).
+## 🚀 Features
 
-## Features
+### Core Functionality
+- **Interactive Web Interface**: Modern React-based frontend with responsive design and dark mode
+- **Multiple Input Methods**: Add locations by address, coordinates, UTM coordinates, or CSV file upload
+- **Advanced Route Optimization**: Uses OR-Tools to solve TSP with multiple optimization strategies
+- **Interactive Maps**: Support for both OpenStreetMap (Leaflet) and Google Maps
+- **Real-time Validation**: Input validation with helpful error messages
+- **Offline Support**: Works offline with saved routes and local storage
 
-- **Interactive Web Interface**: Modern React-based frontend with responsive design
-- **Multiple Input Methods**: Add locations by address, coordinates, or CSV file upload
-- **Route Optimization**: Uses OR-Tools to solve TSP and find the optimal route
-- **Interactive Map**: Leaflet.js map with numbered markers and route visualization
+### Route Management
+- **Save & Load Routes**: Persistent route storage with tags and descriptions
+- **Route Comparison**: Compare multiple route optimizations side-by-side
 - **Export Options**: Export results to CSV or PDF formats
-- **Real-time Geocoding**: Automatic address-to-coordinates conversion
-- **Distance & Time Estimation**: Calculates total distance and estimated travel time
-- **Persistent Preferences**: Language, theme, and route settings saved in `localStorage`
+- **Route Analytics**: Detailed performance metrics and environmental impact analysis
 
-## Technology Stack
+### Advanced Features
+- **Multi-language Support**: English and Spanish translations
+- **Accessibility**: Full keyboard navigation and screen reader support
+- **Error Handling**: Comprehensive error handling with user-friendly messages
+- **Performance Optimization**: Lazy loading, code splitting, and optimized rendering
+- **Real-time Status**: Backend connectivity and network status indicators
+
+## 🛠 Technology Stack
 
 ### Frontend
-
-- **React 18** with TypeScript
-- **Tailwind CSS** for styling
-- **Leaflet.js** for interactive maps
-- **Axios** for API communication
-- **Papa Parse** for CSV handling
-- **html2pdf.js** for PDF export
+- **React 18** with TypeScript for type safety
+- **Tailwind CSS** for responsive styling with dark mode
+- **Leaflet.js** for interactive maps (primary)
+- **Google Maps API** for enhanced mapping (optional)
+- **i18next** for internationalization
+- **Framer Motion** for smooth animations
+- **React Hot Toast** for notifications
 
 ### Backend
-
-- **Python FastAPI** for REST API
-- **OR-Tools** for TSP optimization
+- **Python FastAPI** for high-performance REST API
+- **OR-Tools** for advanced TSP optimization algorithms
 - **GeoPy** for geocoding and distance calculations
-- **Pydantic** for data validation
-- **Uvicorn** as ASGI server
+- **Pydantic** for data validation and serialization
+- **Uvicorn** as ASGI server with auto-reload
 
-## Project Structure
+### Development Tools
+- **Vite** for fast development and building
+- **ESLint** for code quality
+- **TypeScript** for type checking
+- **PostCSS** with Autoprefixer
+
+## 📁 Project Structure
 
 ```
 route-optimizer/
 ├── src/                          # Frontend React application
-│   ├── components/
-│   │   ├── LocationInput.tsx     # Location input form
+│   ├── components/               # React components
+│   │   ├── LocationInput.tsx     # Location input with validation
 │   │   ├── RouteMap.tsx         # Interactive map component
-│   │   └── RouteResults.tsx     # Results display and export
-│   ├── services/
-│   │   └── api.ts               # API service layer
-│   ├── types/
-│   │   └── index.ts             # TypeScript type definitions
+│   │   ├── RouteResults.tsx     # Results display and export
+│   │   ├── RouteSettings.tsx    # Route configuration
+│   │   ├── RouteAnalytics.tsx   # Performance analytics
+│   │   ├── RouteComparison.tsx  # Route comparison
+│   │   └── SavedRoutes.tsx      # Route management
+│   ├── services/                # API services
+│   │   └── api.ts               # Backend communication
+│   ├── utils/                   # Utility functions
+│   │   ├── errorHandler.ts      # Error handling
+│   │   ├── storage.ts           # Local storage management
+│   │   └── validation.ts        # Input validation
+│   ├── types/                   # TypeScript definitions
+│   │   └── index.ts             # Type definitions
+│   ├── i18n.ts                  # Internationalization setup
 │   └── App.tsx                  # Main application component
 ├── backend/                      # Python FastAPI backend
 │   ├── main.py                  # Main FastAPI application
 │   ├── requirements.txt         # Python dependencies
-│   └── test_data/
-│       └── sample_locations.csv # Sample data for testing
-├── package.json                 # Frontend dependencies
-└── README.md                    # This file
+│   └── test_data/               # Sample data
+└── public/                      # Static assets
 ```
 
-## Installation & Setup
+## 🚀 Quick Start
 
 ### Prerequisites
-
-- Node.js 18+ and npm
-- Python 3.8+
-- pip (Python package manager)
+- **Node.js 18+** and npm
+- **Python 3.8+** and pip
+- Internet connection for map tiles and geocoding
 
 ### Backend Setup
 
 1. **Navigate to backend directory**:
-
    ```bash
    cd backend
    ```
 
 2. **Create virtual environment** (recommended):
-
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. **Install Python dependencies**:
-
    ```bash
    pip install -r requirements.txt
    ```
 
 4. **Start the backend server**:
-
    ```bash
    python main.py
    ```
-
+   
    The API will be available at `http://localhost:8000`
-
    - API documentation: `http://localhost:8000/docs`
    - Health check: `http://localhost:8000/health`
 
 ### Frontend Setup
 
 1. **Install dependencies**:
-
    ```bash
    npm install
    ```
 
-2. **Start the development server**:
+2. **Create environment file** (optional):
+   ```bash
+   cp .env.example .env
+   # Edit .env with your Google Maps API key if desired
+   ```
 
+3. **Start the development server**:
    ```bash
    npm run dev
    ```
-
+   
    The application will be available at `http://localhost:5173`
 
-## Usage
+## 📖 Usage Guide
 
 ### Adding Locations
 
 1. **Manual Entry**:
-
-   - Switch between "Address" and "Coordinates" input modes
-   - Enter addresses (e.g., "123 Main St, New York, NY") or coordinates
-   - Click the "+" button to add each location
+   - **Address**: Enter full addresses (e.g., "123 Main St, New York, NY")
+   - **Coordinates**: Enter latitude and longitude (decimal degrees)
+   - **UTM**: Enter UTM coordinates with zone information
 
 2. **CSV Upload**:
-   - Prepare a CSV file with columns: `address`, `lat`, `lng`
-   - Use the "Upload CSV file" option
-   - See `backend/test_data/sample_locations.csv` for format example
+   - Prepare CSV with columns: `address`, `lat`, `lng`
+   - Maximum file size: 1MB
+   - Maximum locations: 25 (recommended for optimal performance)
 
-### Calculating Routes
+### Route Optimization
 
-1. Add at least 2 locations
-2. Click "Calculate Optimal Route"
-3. View results on the interactive map
-4. Check the route summary with distance and time estimates
+1. **Settings Configuration**:
+   - **Optimization Goal**: Distance, Time, or Balanced
+   - **Vehicle Type**: Car, Truck, Bicycle, or Walking
+   - **Starting Location**: Choose specific start point or auto-select
+   - **Return to Start**: Option to create round-trip routes
 
-### Exporting Results
+2. **Calculate Route**:
+   - Add at least 2 locations
+   - Configure settings as needed
+   - Click "Calculate Optimal Route"
+   - View results on interactive map
 
-- **CSV Export**: Download route order with coordinates
-- **PDF Export**: Generate PDF with route summary and details
+### Advanced Features
 
-## API Endpoints
+1. **Route Analytics**:
+   - Performance metrics and efficiency scores
+   - Environmental impact calculations
+   - Segment-by-segment analysis
+   - Optimization algorithm details
 
-### `POST /optimize-route`
+2. **Route Management**:
+   - Save routes with custom names and tags
+   - Load previously saved routes
+   - Compare multiple route optimizations
+   - Export to CSV or PDF formats
 
-Optimize route for multiple locations.
+## 🔧 Configuration
 
-**Request Body**:
+### Environment Variables
 
+Create a `.env` file in the root directory:
+
+```env
+# Google Maps API Key (optional)
+VITE_GOOGLE_MAPS_API_KEY=your_api_key_here
+
+# Backend API URL (default: http://localhost:8000)
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+### Google Maps Setup (Optional)
+
+1. Get API key from [Google Cloud Console](https://console.cloud.google.com/)
+2. Enable Maps JavaScript API
+3. Add key to `.env` file
+4. Restart development server
+
+## 🚀 Production Deployment
+
+### Build Frontend
+
+```bash
+npm run build
+```
+
+The built files will be in the `dist` directory.
+
+### Deploy Backend
+
+```bash
+cd backend
+pip install -r requirements.txt
+python main.py
+```
+
+For production, consider using:
+- **Gunicorn** or **Uvicorn** with multiple workers
+- **Nginx** as reverse proxy
+- **Docker** for containerization
+- **Environment variables** for configuration
+
+## 🧪 API Documentation
+
+### Main Endpoints
+
+#### `POST /optimize-route`
+Optimize route for multiple locations with advanced options.
+
+**Request**:
 ```json
 {
   "locations": [
@@ -156,12 +236,14 @@ Optimize route for multiple locations.
       "lat": 40.7128,
       "lng": -74.006
     }
-  ]
+  ],
+  "optimization_type": "distance",
+  "vehicle_type": "car",
+  "return_to_start": false
 }
 ```
 
 **Response**:
-
 ```json
 {
   "success": true,
@@ -169,130 +251,121 @@ Optimize route for multiple locations.
     "locations": [...],
     "total_distance": 5420.5,
     "total_time": 391.5,
-    "route_order": [0, 2, 1, 3]
+    "route_order": [0, 2, 1, 3],
+    "optimization_stats": {
+      "algorithm_used": "OR-Tools TSP",
+      "computation_time": 0.45,
+      "improvement_percentage": 23.5
+    }
   }
 }
 ```
 
-### `POST /optimize`
-
-Optimize a list of coordinates.
-
-**Request Body**:
-
-```json
-{
-  "locations": [
-    [40.7128, -74.006],
-    [34.0522, -118.2437]
-  ],
-  "return_to_start": true
-}
-```
-
-**Response**:
-
-```json
-{
-  "order": [0, 1],
-  "total_distance": 4500.0
-}
-```
-
-### `POST /geocode`
-
+#### `POST /geocode`
 Convert address to coordinates.
 
-**Request Body**:
+#### `GET /health`
+Backend health check.
 
-```json
-{
-  "address": "123 Main St, New York, NY"
-}
-```
+## 🔍 Algorithm Details
 
-### `GET /health`
+The application uses advanced optimization algorithms:
 
-Health check endpoint.
+1. **TSP Solver**: Google OR-Tools with multiple strategies
+2. **Distance Calculation**: Real-world distances using GeoPy
+3. **Optimization Strategies**:
+   - **Distance**: Minimize total travel distance
+   - **Time**: Minimize total travel time
+   - **Balanced**: Optimize both distance and time
 
-## Algorithm Details
+4. **Performance**: Handles up to 25 locations efficiently
 
-The application uses the **Traveling Salesman Problem (TSP)** algorithm implemented with Google's OR-Tools:
+## 🛠 Development
 
-1. **Distance Matrix Calculation**: Uses GeoPy to calculate real-world distances between all location pairs
-2. **TSP Optimization**: OR-Tools solver finds the shortest route visiting all locations exactly once
-3. **Heuristics**: Uses PATH_CHEAPEST_ARC with Guided Local Search for optimization
-4. **Time Estimation**: Estimates travel time based on average speed of 50 km/h
-
-## Development
-
-### Frontend Development
+### Available Scripts
 
 ```bash
 npm run dev          # Start development server
 npm run build        # Build for production
 npm run lint         # Run ESLint
+npm run type-check   # TypeScript type checking
+npm run preview      # Preview production build
 ```
 
-### Backend Development
+### Code Quality
 
-```bash
-python main.py       # Start with auto-reload
-```
+- **TypeScript** for type safety
+- **ESLint** for code quality
+- **Prettier** for code formatting
+- **Husky** for git hooks (optional)
 
-### Adding New Features
-
-1. **Frontend**: Add components in `src/components/`
-2. **Backend**: Extend API endpoints in `backend/main.py`
-3. **Types**: Update TypeScript definitions in `src/types/`
-
-## Troubleshooting
+## 🐛 Troubleshooting
 
 ### Common Issues
 
 1. **Backend Connection Error**:
-
    - Ensure Python backend is running on port 8000
-   - Check that all Python dependencies are installed
-   - Verify CORS settings allow frontend origin
+   - Check firewall settings
+   - Verify all dependencies are installed
 
 2. **Geocoding Failures**:
+   - Check internet connection
+   - Verify address format
+   - Try using coordinates directly
 
-   - Check internet connection for Nominatim API access
-   - Verify address format is complete and accurate
-   - Try using coordinates directly if geocoding fails
+3. **Map Not Loading**:
+   - Check internet connection for tiles
+   - Verify Google Maps API key (if using)
+   - Check browser console for errors
 
-3. **Route Optimization Timeout**:
+4. **Performance Issues**:
+   - Reduce number of locations (< 25 recommended)
+   - Check system resources
+   - Clear browser cache
 
-   - Reduce number of locations (recommended: < 20 for optimal performance)
-   - Check that all coordinates are valid
+### Error Codes
 
-4. **Map Not Loading**:
-   - Ensure internet connection for OpenStreetMap tiles
-   - Check browser console for JavaScript errors
+- **NETWORK_ERROR**: Backend server not accessible
+- **TIMEOUT_ERROR**: Request took too long
+- **VALIDATION_ERROR**: Invalid input data
+- **GEOCODING_ERROR**: Address not found
+- **OPTIMIZATION_ERROR**: Route calculation failed
 
-## Performance Considerations
-
-- **Location Limit**: Optimal performance with < 20 locations
-- **Geocoding**: Cached results improve performance for repeated addresses
-- **TSP Complexity**: Algorithm complexity is O(n²) for distance matrix, O(n!) for TSP
-- **Memory Usage**: Large location sets may require increased memory allocation
-
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make changes with appropriate tests
-4. Submit a pull request
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
 
-## License
+### Development Guidelines
 
-This project is open source and available under the MIT License.
+- Follow TypeScript best practices
+- Write comprehensive tests
+- Update documentation
+- Follow conventional commit messages
 
-## Support
+## 📄 License
 
-For issues and questions:
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-1. Check the troubleshooting section
-2. Review API documentation at `http://localhost:8000/docs`
-3. Check browser console and backend logs for error details
+## 🙏 Acknowledgments
+
+- **OR-Tools** for optimization algorithms
+- **OpenStreetMap** for map data
+- **React** and **TypeScript** communities
+- **Tailwind CSS** for styling system
+
+## 📞 Support
+
+For support and questions:
+
+1. Check the [troubleshooting section](#-troubleshooting)
+2. Review [API documentation](#-api-documentation)
+3. Check browser console and backend logs
+4. Open an issue on GitHub
+
+---
+
+**Built with ❤️ using React, TypeScript, and Python**

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   MapPin,
   Calculator,
@@ -8,6 +8,8 @@ import {
   Folder,
   Moon,
   Sun,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 import { LocationInput } from "./components/LocationInput";
@@ -18,95 +20,123 @@ import { RouteComparison } from "./components/RouteComparison";
 import { SavedRoutes } from "./components/SavedRoutes";
 import { RouteAnalytics } from "./components/RouteAnalytics";
 import { routeService } from "./services/api";
-import { Location, OptimizedRoute, RouteRequest } from "./types";
+import { Location, OptimizedRoute, RouteRequest, LoadingState } from "./types";
 import { useTranslation } from "react-i18next";
+import { storage } from "./utils/storage";
+import { handleError, showErrorToast, validateRouteRequest } from "./utils/errorHandler";
+import { generateId } from "./utils/validation";
+import toast from "react-hot-toast";
 
 function App() {
   const { t, i18n } = useTranslation();
-  const [language, setLanguage] = useState(
-    () => localStorage.getItem("lang") || "es",
-  );
-  const [darkMode, setDarkMode] = useState(() => {
-    const stored = localStorage.getItem("darkMode");
-    return stored
-      ? stored === "true"
-      : window.matchMedia("(prefers-color-scheme: dark)").matches;
-  });
+  
+  // State management
+  const [language, setLanguage] = useState(() => storage.getLanguage());
+  const [darkMode, setDarkMode] = useState(() => storage.getDarkMode());
+  const [routeSettings, setRouteSettings] = useState<Partial<RouteRequest>>(() => storage.getRouteSettings());
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [optimizedRoute, setOptimizedRoute] = useState<OptimizedRoute | null>(null);
+  const [comparisonRoutes, setComparisonRoutes] = useState<OptimizedRoute[]>([]);
+  const [loadingState, setLoadingState] = useState<LoadingState>({ isLoading: false });
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"route" | "analytics" | "comparison" | "saved">("route");
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
 
+  // Initialize language and theme
   useEffect(() => {
     i18n.changeLanguage(language);
-    localStorage.setItem("lang", language);
+    storage.saveLanguage(language);
   }, [language, i18n]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", darkMode);
-    localStorage.setItem("darkMode", darkMode.toString());
+    storage.saveDarkMode(darkMode);
   }, [darkMode]);
 
-  const [routeSettings, setRouteSettings] = useState<Partial<RouteRequest>>(
-    () => {
-      const saved = localStorage.getItem("routeSettings");
-      return saved
-        ? JSON.parse(saved)
-        : {
-            optimization_type: "distance",
-            vehicle_type: "car",
-            return_to_start: false,
-          };
-    },
-  );
-
+  // Save route settings
   useEffect(() => {
-    localStorage.setItem("routeSettings", JSON.stringify(routeSettings));
+    storage.saveRouteSettings(routeSettings);
   }, [routeSettings]);
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [optimizedRoute, setOptimizedRoute] = useState<OptimizedRoute | null>(
-    null,
-  );
-  const [comparisonRoutes, setComparisonRoutes] = useState<OptimizedRoute[]>(
-    [],
-  );
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<
-    "route" | "analytics" | "comparison" | "saved"
-  >("route");
-  // Use crypto API for better randomness
-  const generateId = () =>
-    typeof crypto !== "undefined" && crypto.randomUUID
-      ? crypto.randomUUID()
-      : Math.random().toString(36).substring(2, 11);
 
-  const handleAddLocation = (locationData: Omit<Location, "id">) => {
+  // Online/offline detection
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Backend health check
+  useEffect(() => {
+    const checkBackendHealth = async () => {
+      try {
+        const isHealthy = await routeService.healthCheck();
+        setBackendStatus(isHealthy ? 'online' : 'offline');
+      } catch (error) {
+        setBackendStatus('offline');
+      }
+    };
+
+    checkBackendHealth();
+    const interval = setInterval(checkBackendHealth, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleAddLocation = useCallback((locationData: Omit<Location, "id">) => {
     const newLocation: Location = {
       ...locationData,
       id: generateId(),
     };
     setLocations((prev) => [...prev, newLocation]);
     setError(null);
-  };
+    
+    // Clear route if locations change significantly
+    if (optimizedRoute && optimizedRoute.locations.length !== locations.length + 1) {
+      setOptimizedRoute(null);
+    }
+  }, [locations.length, optimizedRoute]);
 
-  const handleRemoveLocation = (id: string) => {
+  const handleRemoveLocation = useCallback((id: string) => {
     setLocations((prev) => prev.filter((loc) => loc.id !== id));
     if (optimizedRoute) {
       setOptimizedRoute(null);
     }
-  };
+  }, [optimizedRoute]);
 
-  const handleClearAll = () => {
+  const handleClearAll = useCallback(() => {
     setLocations([]);
     setOptimizedRoute(null);
     setComparisonRoutes([]);
     setError(null);
-  };
+  }, []);
 
-  const handleCalculateRoute = async () => {
-    if (locations.length < 2) {
-      setError(t("at_least_two"));
+  const handleCalculateRoute = useCallback(async () => {
+    // Validation
+    const validationErrors = validateRouteRequest({ locations });
+    if (validationErrors.length > 0) {
+      setError(validationErrors[0]);
       return;
     }
 
-    setIsLoading(true);
+    if (!isOnline) {
+      toast.error('No internet connection. Please check your connection and try again.');
+      return;
+    }
+
+    if (backendStatus === 'offline') {
+      toast.error('Backend server is not available. Please start the Python server.');
+      return;
+    }
+
+    setLoadingState({ isLoading: true, message: 'Optimizing route...' });
     setError(null);
 
     try {
@@ -134,21 +164,23 @@ function App() {
           result,
         ]);
       }
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to calculate route";
-      setError(errorMessage);
-      console.error("Route calculation error:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const handleLoadRoute = (route: OptimizedRoute) => {
+      toast.success('Route optimized successfully!');
+    } catch (err) {
+      const appError = handleError(err);
+      setError(appError.message);
+      showErrorToast(appError);
+    } finally {
+      setLoadingState({ isLoading: false });
+    }
+  }, [locations, routeSettings, optimizedRoute, isOnline, backendStatus]);
+
+  const handleLoadRoute = useCallback((route: OptimizedRoute) => {
     setOptimizedRoute(route);
     setLocations(route.locations);
     setActiveTab("route");
-  };
+    toast.success('Route loaded successfully');
+  }, []);
 
   const tabs = [
     { id: "route", label: t("route_planning"), icon: MapPin },
@@ -158,11 +190,20 @@ function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <Toaster position="top-right" />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: darkMode ? '#374151' : '#ffffff',
+            color: darkMode ? '#f9fafb' : '#111827',
+          },
+        }}
+      />
 
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
@@ -178,18 +219,36 @@ function App() {
                 </p>
               </div>
             </div>
+            
             <div className="flex items-center gap-4">
+              {/* Connection Status */}
+              <div className="flex items-center gap-2">
+                {isOnline ? (
+                  <Wifi className="text-green-500" size={16} />
+                ) : (
+                  <WifiOff className="text-red-500" size={16} />
+                )}
+                <div className={`w-2 h-2 rounded-full ${
+                  backendStatus === 'online' ? 'bg-green-500' : 
+                  backendStatus === 'offline' ? 'bg-red-500' : 'bg-yellow-500'
+                }`} title={`Backend: ${backendStatus}`} />
+              </div>
+
+              {/* Language Selector */}
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="text-sm border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="text-sm border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               >
                 <option value="en">EN</option>
                 <option value="es">ES</option>
               </select>
+
+              {/* Dark Mode Toggle */}
               <button
                 onClick={() => setDarkMode(!darkMode)}
-                className="p-2 rounded-md bg-gray-100 dark:bg-gray-700"
+                className="p-2 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {darkMode ? <Sun size={18} /> : <Moon size={18} />}
               </button>
@@ -199,7 +258,7 @@ function App() {
       </header>
 
       {/* Navigation Tabs */}
-      <div className="bg-white border-b">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-8">
             {tabs.map((tab) => {
@@ -210,8 +269,8 @@ function App() {
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
                     activeTab === tab.id
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      ? "border-blue-500 text-blue-600 dark:text-blue-400"
+                      : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600"
                   }`}
                 >
                   <IconComponent size={16} />
@@ -243,16 +302,16 @@ function App() {
               />
 
               {/* Calculate Button */}
-              <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                 <button
                   onClick={handleCalculateRoute}
-                  disabled={locations.length < 2 || isLoading}
+                  disabled={locations.length < 2 || loadingState.isLoading || !isOnline || backendStatus === 'offline'}
                   className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {isLoading ? (
+                  {loadingState.isLoading ? (
                     <>
                       <div className="loading-spinner"></div>
-                      Calculating...
+                      {loadingState.message || 'Calculating...'}
                     </>
                   ) : (
                     <>
@@ -263,38 +322,50 @@ function App() {
                 </button>
 
                 {locations.length < 2 && (
-                  <p className="text-sm text-gray-500 mt-2 text-center">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">
                     {t("at_least_two")}
+                  </p>
+                )}
+
+                {!isOnline && (
+                  <p className="text-sm text-red-500 mt-2 text-center">
+                    No internet connection
+                  </p>
+                )}
+
+                {backendStatus === 'offline' && (
+                  <p className="text-sm text-red-500 mt-2 text-center">
+                    Backend server offline
                   </p>
                 )}
               </div>
 
               {/* Error Display */}
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <AlertCircle
                       className="text-red-500 flex-shrink-0 mt-0.5"
                       size={20}
                     />
                     <div>
-                      <h3 className="font-medium text-red-800 mb-1">
+                      <h3 className="font-medium text-red-800 dark:text-red-200 mb-1">
                         {t("error")}
                       </h3>
-                      <p className="text-sm text-red-700">{error}</p>
+                      <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
                       {error.includes("Backend server") && (
-                        <div className="mt-2 text-xs text-red-600">
+                        <div className="mt-2 text-xs text-red-600 dark:text-red-400">
                           <p>Make sure to:</p>
                           <ul className="list-disc list-inside mt-1 space-y-1">
                             <li>
                               Install Python dependencies:{" "}
-                              <code className="bg-red-100 px-1 rounded">
+                              <code className="bg-red-100 dark:bg-red-900 px-1 rounded">
                                 pip install -r backend/requirements.txt
                               </code>
                             </li>
                             <li>
                               Start the backend server:{" "}
-                              <code className="bg-red-100 px-1 rounded">
+                              <code className="bg-red-100 dark:bg-red-900 px-1 rounded">
                                 cd backend && python main.py
                               </code>
                             </li>
@@ -306,7 +377,7 @@ function App() {
                 </div>
               )}
 
-              <RouteResults route={optimizedRoute} isLoading={isLoading} />
+              <RouteResults route={optimizedRoute} isLoading={loadingState.isLoading} />
             </div>
 
             {/* Right Side - Map */}
@@ -314,7 +385,7 @@ function App() {
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                 <h2 className="text-xl font-semibold mb-4">{t("route_map")}</h2>
                 <div className="h-96 lg:h-[600px]">
-                  <RouteMap route={optimizedRoute} isLoading={isLoading} />
+                  <RouteMap route={optimizedRoute} isLoading={loadingState.isLoading} />
                 </div>
               </div>
             </div>
@@ -341,7 +412,7 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-gray-800 border-t mt-12">
+      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-12 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center text-sm text-gray-500 dark:text-gray-400">
             <p>

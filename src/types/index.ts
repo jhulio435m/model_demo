@@ -104,3 +104,15 @@ export interface WeatherData {
     precipitation_chance: number;
   }>;
 }
+
+export interface AppError {
+  code: string;
+  message: string;
+  details?: string;
+}
+
+export interface LoadingState {
+  isLoading: boolean;
+  message?: string;
+  progress?: number;
+}
